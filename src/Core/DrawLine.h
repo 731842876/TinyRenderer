@@ -55,7 +55,7 @@ void DrawLine_V3(int x0, int y0, int x1, int y1, TGAImage& img, TGAColor color) 
     }
 }
 
-//优化
+//优化 将循环中的float除法 改为 循环外计算
 void DrawLine_V4(int x0, int y0, int x1, int y1, TGAImage& img, TGAColor color) {
     bool steep = false;
     if (std::abs(x1 - x0) < std::abs(y1 - y0)) {
@@ -70,13 +70,23 @@ void DrawLine_V4(int x0, int y0, int x1, int y1, TGAImage& img, TGAColor color) 
         std::swap(x0, x1);
         std::swap(y0, y1);
     }
-
+    int dy = y1 - y0;
+    int dx = x1 - x0;
+    //直线斜率 k=dy/dx
+    float k = std::abs(dy / (float)dx);
+    float err = 0;
     int y = y0;
     for (int x = x0; x <= x1; x++) {
         if (steep) {
             img.set(y, x, color);
         } else {
             img.set(x, y, color);
+        }
+        err += k;
+        if (err >= .5) {
+            // y轴从高到低
+            y += (y1 > y0) ? 1 : -1;
+            err -= 1.;
         }
     }
 }
