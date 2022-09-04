@@ -15,19 +15,19 @@
 
 class Model {
 private:
-    //每个点xyz坐标
-    std::vector<Vec3f> _vec3f;
+    //每个顶点xyz坐标
+    std::vector<Vec3f> _vecVertex;
     //每个面所需的三个点
-    std::vector<std::vector<int>> _vecFaces;
+    std::vector<std::vector<int>> _vecFace;
 
 public:
     explicit Model(const char* fileName);
     ~Model();
 
-    int VertsSize();
+    int VertexSize();
     int FacesSize();
-    Vec3f Vert(int index);
-    std::vector<int> Faces(int index);
+    Vec3f GetVertex(int index);
+    std::vector<int> GetFace(int index);
 };
 
 #endif

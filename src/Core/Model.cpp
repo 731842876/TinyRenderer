@@ -28,40 +28,46 @@ Model::Model(const char* fileName) {
         std::istringstream iss(lineContent.c_str());
 
         char buf;
-        if (lineContent.compare(0, 2, "v ")) {
+
+        if (!lineContent.compare(0, 2, "v ")) {
+            // 将每行多余的内容去掉
             iss >> buf;
-            Vec3f v;
+
+            Vec3f p;
             for (int i = 0; i < 3; i++) {
-                iss >> v.raw[i];
+                iss >> p.raw[i];
             }
-            _vec3f.push_back(v);
+            _vecVertex.push_back(p);
 
-        } else if (lineContent.compare(0, 2, "f ")) {
-            // std::vector<int> f;
-            // int buf, index;
-            // iss >> trash;
-            // while (iss >> idx >> trash >> itrash >> trash >> itrash) {
-            //     idx--;  // in wavefront obj all indices start at 1, not zero
-            //     f.push_back(idx);
-            // }
-            // _vecFaces.push_back(f);
+        } else if (!lineContent.compare(0, 2, "f ")) {
+            std::vector<int> f;
+            int index, ibuf;
+            iss >> buf;
+
+            while (iss >> index >> buf >> ibuf >> buf >> ibuf) {
+                index--;
+                f.push_back(index);
+            }
+            _vecFace.push_back(f);
         }
+        std::cout << std::endl;
     }
+    std::cout << " Vertx Size->" << _vecVertex.size() << std::endl;
+    std::cout << " Faces Size->" << _vecFace.size() << std::endl;
 }
-
 Model::~Model() {}
 
-int Model::VertsSize() {
-    return _vec3f.size();
+int Model::VertexSize() {
+    return _vecVertex.size();
 }
 int Model::FacesSize() {
-    return _vecFaces.size();
+    return _vecFace.size();
 }
 
-Vec3f Model::Vert(int index) {
-    return _vec3f[index];
+Vec3f Model::GetVertex(int index) {
+    return _vecVertex[index];
 }
 
-std::vector<int> Model::Faces(int index) {
-    return _vecFaces[index];
+std::vector<int> Model::GetFace(int index) {
+    return _vecFace[index];
 }
