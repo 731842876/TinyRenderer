@@ -50,7 +50,6 @@ Model::Model(const char* fileName) {
             }
             _vecFace.push_back(f);
         }
-        std::cout << std::endl;
     }
     std::cout << " Vertx Size->" << _vecVertex.size() << std::endl;
     std::cout << " Faces Size->" << _vecFace.size() << std::endl;
