@@ -19,6 +19,16 @@ const TGAColor blue = TGAColor(147, 224, 255, 255);
 
 using namespace std;
 
+struct Triangle {
+    Vec2i Points[3];
+
+    Triangle(Vec2i a, Vec2i b, Vec2i c) {
+        Points[0] = a;
+        Points[1] = b;
+        Points[2] = c;
+    }
+};
+
 void s1() {
     // 点绘制
     // TGAImage image(100, 100, TGAImage::RGB);
@@ -57,27 +67,56 @@ void s1() {
     return;
 }
 
-void TriangleDrawing(vector<Vec2i> Triangle, TGAImage& res) {
-    vector<TGAColor> colors = {green, red, blue};
+// 射线法
+void TriangleDrawing(Triangle triangle, TGAImage& res) {
+    Vec2i a = triangle.Points[0];
+    Vec2i b = triangle.Points[1];
+    Vec2i c = triangle.Points[2];
 
-    for (int i = 0; i < 3; i++) {
-        Vec2i v0 = Triangle[i];
-        Vec2i v1 = Triangle[(i + 1) % 3];
-        DrawLine_V4(v0.x, v0.y, v1.x, v1.y, res, colors[i]);
+    // 根据Y轴从小到大排序三个点
+    if (a.y > b.y) {
+        swap(a, b);
+    }
+    if (a.y > c.y) {
+        swap(a, c);
+    }
+    if (b.y > c.y) {
+        swap(b, c);
+    }
+
+    // 整体
+    int h1 = c.y - a.y;
+    // 上半部分
+    int h2 = c.y - b.y;
+    // 下半部分
+    int h3 = b.y - a.y;
+
+    for (int h = 0; h <= h1; h++) {
+        // 从下到上绘制，判断是否到达上半部分
+        bool otherHalf = h >= h3 || b.y == a.y;
+
+        int height = otherHalf ? h2 : h3;
+
+        // 左边界比例
+        float leftBeta = (float)h / h1;
+        // 右边界
+        float rightBeta = (float)(h - (otherHalf ? h3 : 0)) / height;
+
+        Vec2i start = a + (c - a) * leftBeta;
+        Vec2i end = otherHalf ? b + (c - b) * rightBeta : a + (b - a) * rightBeta;
+
+        for (int i = start.x; i <= end.x; i++) {
+            res.set(i, a.y + h, green);
+        }
     }
 }
 
 void s2() {
     TGAImage image(400, 400, TGAImage::RGB);
 
-    vector<vector<Vec2i>> Triangles = {{{10, 70}, {50, 160}, {70, 80}}};
-    for (auto& Triangle : Triangles) {
-        TriangleDrawing(Triangle, image);
-        for (auto& point : Triangle) {
-            cout << point.x << " " << point.y << endl;
-        }
-        cout << endl;
-    }
+    // vector<vector<Vec2i>> Triangles = {{{200, 200}, {300, 100}, {70, 80}}};
+    Triangle t({200, 200}, {300, 100}, {70, 80});
+    TriangleDrawing(t, image);
 
     image.flip_vertically();
     image.write_tga_file("output.tga");
