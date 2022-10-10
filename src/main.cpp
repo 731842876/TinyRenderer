@@ -6,6 +6,7 @@
  * Copyright (c) 2022 by qianwanyu 731842876@qq.com, All Rights Reserved.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -67,46 +68,93 @@ void s1() {
     return;
 }
 
-// 射线法
-void TriangleDrawing(Triangle triangle, TGAImage& res) {
-    Vec2i a = triangle.Points[0];
-    Vec2i b = triangle.Points[1];
-    Vec2i c = triangle.Points[2];
+Vec3f Barycentric(Triangle *triangle, Vec2i p) {
+    int ax = triangle->Points[0].x;
+    int ay = triangle->Points[0].y;
 
-    // 根据Y轴从小到大排序三个点
-    if (a.y > b.y) {
-        swap(a, b);
-    }
-    if (a.y > c.y) {
-        swap(a, c);
-    }
-    if (b.y > c.y) {
-        swap(b, c);
-    }
+    int bx = triangle->Points[1].x;
+    int by = triangle->Points[1].y;
 
-    // 整体
-    int h1 = c.y - a.y;
-    // 上半部分
-    int h2 = c.y - b.y;
-    // 下半部分
-    int h3 = b.y - a.y;
+    int cx = triangle->Points[2].x;
+    int cy = triangle->Points[2].y;
 
-    for (int h = 0; h <= h1; h++) {
-        // 从下到上绘制，判断是否到达上半部分
-        bool otherHalf = h >= h3 || b.y == a.y;
+    int px = p.x;
+    int py = p.y;
 
-        int height = otherHalf ? h2 : h3;
+    float beta = (float)((ay - cy) * px + (cx - ax) * py + ax * cy - cx * ay) / ((ay - cy) * bx + (cx - ax) * by + ax * cy - cx * ay);
+    float gamma = (float)((ay - by) * px + (bx - ax) * py + ax * by - bx * ay) / ((ay - by) * cx + (bx - ax) * cy + ax * by - bx * ay);
+    float alpha = 1 - beta - gamma;
+    cout << alpha << "  " << beta << "  " << gamma << endl;
 
-        // 左边界比例
-        float leftBeta = (float)h / h1;
-        // 右边界
-        float rightBeta = (float)(h - (otherHalf ? h3 : 0)) / height;
+    return Vec3f(alpha, beta, gamma);
+}
 
-        Vec2i start = a + (c - a) * leftBeta;
-        Vec2i end = otherHalf ? b + (c - b) * rightBeta : a + (b - a) * rightBeta;
+void TriangleDrawing(Triangle *triangle, TGAImage &res, int select) {
+    // 1.射线法
+    // 2.建立三角形的最小box，判断box每个点是否在三角形内
 
-        for (int i = start.x; i <= end.x; i++) {
-            res.set(i, a.y + h, green);
+    Vec2i a = triangle->Points[0];
+    Vec2i b = triangle->Points[1];
+    Vec2i c = triangle->Points[2];
+
+    if (select == 1) {
+        // 根据Y轴从小到大排序三个点
+        if (a.y > b.y) {
+            swap(a, b);
+        }
+        if (a.y > c.y) {
+            swap(a, c);
+        }
+        if (b.y > c.y) {
+            swap(b, c);
+        }
+
+        // 整体
+        int h1 = c.y - a.y;
+        // 上半部分
+        int h2 = c.y - b.y;
+        // 下半部分
+        int h3 = b.y - a.y;
+
+        for (int h = 0; h <= h1; h++) {
+            // 从下到上绘制，判断是否到达上半部分
+            bool otherHalf = h >= h3 || b.y == a.y;
+
+            int height = otherHalf ? h2 : h3;
+
+            // 左边界比例
+
+            float leftBeta = (float)h / h1;
+            // 右边界
+            float rightBeta = (float)(h - (otherHalf ? h3 : 0)) / height;
+
+            Vec2i start = a + (c - a) * leftBeta;
+            Vec2i end = otherHalf ? b + (c - b) * rightBeta : a + (b - a) * rightBeta;
+
+            for (int i = start.x; i <= end.x; i++) {
+                res.set(i, a.y + h, green);
+            }
+        }
+    } else if (select == 2) {
+        Vec2i bboxMin(res.get_width() - 1, res.get_height() - 1);
+        Vec2i bboxMax(0, 0);
+
+        bboxMin.x = min({bboxMin.x, a.x, b.x, c.x});
+        bboxMin.y = min({bboxMin.y, a.y, b.y, c.y});
+        bboxMax.x = max({bboxMax.x, a.x, b.x, c.x});
+        bboxMax.y = max({bboxMax.y, a.y, b.y, c.y});
+        cout << bboxMax << endl;
+        cout << bboxMin << endl;
+
+        for (int i = bboxMin.x; i <= bboxMax.x; i++) {
+            for (int j = bboxMin.y; j <= bboxMax.y; j++) {
+                Vec2i p(i, j);
+
+                Vec3f pA = Barycentric(triangle, p);
+                if (pA.x > 0 && pA.y > 0 && pA.z > 0) {
+                    res.set(i, j, green);
+                }
+            }
         }
     }
 }
@@ -114,9 +162,8 @@ void TriangleDrawing(Triangle triangle, TGAImage& res) {
 void s2() {
     TGAImage image(400, 400, TGAImage::RGB);
 
-    // vector<vector<Vec2i>> Triangles = {{{200, 200}, {300, 100}, {70, 80}}};
     Triangle t({200, 200}, {300, 100}, {70, 80});
-    TriangleDrawing(t, image);
+    TriangleDrawing(&t, image, 2);
 
     image.flip_vertically();
     image.write_tga_file("output.tga");
