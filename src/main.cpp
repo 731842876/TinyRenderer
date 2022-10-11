@@ -84,12 +84,12 @@ Vec3f Barycentric(Triangle *triangle, Vec2i p) {
     float beta = (float)((ay - cy) * px + (cx - ax) * py + ax * cy - cx * ay) / ((ay - cy) * bx + (cx - ax) * by + ax * cy - cx * ay);
     float gamma = (float)((ay - by) * px + (bx - ax) * py + ax * by - bx * ay) / ((ay - by) * cx + (bx - ax) * cy + ax * by - bx * ay);
     float alpha = 1 - beta - gamma;
-    cout << alpha << "  " << beta << "  " << gamma << endl;
+    // cout << alpha << "  " << beta << "  " << gamma << endl;
 
     return Vec3f(alpha, beta, gamma);
 }
 
-void TriangleDrawing(Triangle *triangle, TGAImage &res, int select) {
+void TriangleDrawing(Triangle *triangle, TGAImage &res, TGAColor color, int select) {
     // 1.射线法
     // 2.建立三角形的最小box，判断box每个点是否在三角形内
 
@@ -132,7 +132,7 @@ void TriangleDrawing(Triangle *triangle, TGAImage &res, int select) {
             Vec2i end = otherHalf ? b + (c - b) * rightBeta : a + (b - a) * rightBeta;
 
             for (int i = start.x; i <= end.x; i++) {
-                res.set(i, a.y + h, green);
+                res.set(i, a.y + h, color);
             }
         }
     } else if (select == 2) {
@@ -143,8 +143,8 @@ void TriangleDrawing(Triangle *triangle, TGAImage &res, int select) {
         bboxMin.y = min({bboxMin.y, a.y, b.y, c.y});
         bboxMax.x = max({bboxMax.x, a.x, b.x, c.x});
         bboxMax.y = max({bboxMax.y, a.y, b.y, c.y});
-        cout << bboxMax << endl;
-        cout << bboxMin << endl;
+        // cout << bboxMax << endl;
+        // cout << bboxMin << endl;
 
         for (int i = bboxMin.x; i <= bboxMax.x; i++) {
             for (int j = bboxMin.y; j <= bboxMax.y; j++) {
@@ -152,7 +152,7 @@ void TriangleDrawing(Triangle *triangle, TGAImage &res, int select) {
 
                 Vec3f pA = Barycentric(triangle, p);
                 if (pA.x > 0 && pA.y > 0 && pA.z > 0) {
-                    res.set(i, j, green);
+                    res.set(i, j, color);
                 }
             }
         }
@@ -160,15 +160,35 @@ void TriangleDrawing(Triangle *triangle, TGAImage &res, int select) {
 }
 
 void s2() {
-    TGAImage image(400, 400, TGAImage::RGB);
+    // TGAImage image(400, 400, TGAImage::RGB);
 
-    Triangle t({200, 200}, {300, 100}, {70, 80});
-    TriangleDrawing(&t, image, 2);
+    // 绘制三角形
+    // Triangle t({200, 200}, {300, 100}, {70, 80});
+    // TriangleDrawing(&t, image, 2);
+
+    // 读取模型并绘制上色
+    TGAImage image(800, 800, TGAImage::RGB);
+    Model m("../obj/head.obj");
+
+    for (int i = 0; i < m.FacesSize(); i++) {
+        vector<int> face = m.GetFace(i);
+        Vec2i screenPoints[3];
+        for (int j = 0; j < face.size(); j++) {
+            Vec3f worldPoints = m.GetVertex(face[j]);
+
+            // NDC（Normalized Device Coordiantes，标准化设备坐标）与屏幕坐标的转换
+            // NDC 范围 [-1,1]
+            // 屏幕坐标  [width,height]
+            // (NDC.x + 1) / 2 * width =  Screen.x
+            screenPoints[j] = Vec2i((worldPoints.x + 1.) / 2 * 800, (worldPoints.y + 1.) / 2 * 800);
+        }
+
+        Triangle t(screenPoints[0], screenPoints[1], screenPoints[2]);
+        TriangleDrawing(&t, image, TGAColor(rand() % 255, rand() % 255, rand() % 255, 255), 2);
+    }
 
     image.flip_vertically();
     image.write_tga_file("output.tga");
-
-    return;
 }
 
 int main() {
